@@ -30,13 +30,21 @@
  *         answer  = item.text     (what the agent claims was decided/assigned)
  *     adherence == 0  →  the item is not backed by the transcript  →  quarantine.
  *
- * ⚠️ TWO THINGS TO CONFIRM against the Postman/Schema reference in the docs
- *    before the finale (marked TODO below):
- *      1. The exact request body field names for /adherence and /relevancy.
- *         Different doc pages phrase them as {context, answer} vs {question,
- *         answer}; confirm and adjust `checkAdherence` / `checkRelevancy`.
- *      2. Free-tier rate limits (the project must stay $0). Wrap calls in the
- *         backoff helper (server/lib — see doc 16.9) so limits queue, not drop.
+ * ✅ VERIFIED via live probe (June 24 2026):
+ *   /adherence body: { context, llm_answer }  (NOT "answer" — that 400s)
+ *   /relevancy body: { question, llm_answer }
+ *   /adherence response: { summary: { adherence_score: 0.0|1.0 },
+ *                          details: { atomic_facts, adherence_list, adherence_latency } }
+ *   /relevancy response: { summary: { relevancy_score: 0.0|1.0 },
+ *                          details: { atomic_facts, relevancy_list, relevancy_latency } }
+ *
+ * ⚠️ CRITICAL FINDING from probe: adherence is VERY literal. If the context
+ *   says "I'll have MongoDB ready" but the item says "Rahul will set up MongoDB",
+ *   adherence returns 0 because "Rahul" isn't in the context. FIX: pass a WIDE
+ *   transcript chunk (with speaker labels) as context, not just the tight
+ *   source_quote. The pipeline must build context as:
+ *     "[00:29] Priya: ... [00:41] Rahul: I'll have the MongoDB instance ready by Friday."
+ *   so the speaker identity is visible to the adherence detector.
  */
 
 const ENKRYPT_BASE_URL = "https://api.enkryptai.com";
@@ -112,42 +120,50 @@ export class EnkryptClient {
   }
 
   // -- Checkpoint 1: raw transcript, before any agent sees it -----------------
-  /** Returns true if the transcript span looks like a prompt-injection attempt. */
+  /**
+   * VERIFIED response shape:
+   *   { summary: { injection_attack: 0|1 },
+   *     details: { injection_attack: { safe: "0.887", attack: "0.113", ... } } }
+   *   Note: confidence values are STRINGS, not numbers.
+   */
   async checkInjection(text: string): Promise<{ flagged: boolean; confidence: number }> {
     const r = await this.detect(text, ["injection_attack"]);
     const flagged = (r.summary?.injection_attack ?? 0) === 1;
-    // details.injection_attack carries confidence levels (verified).
-    const detail = (r.details?.injection_attack ?? {}) as Record<string, number>;
-    const confidence = detail.attack ?? detail.confidence ?? (flagged ? 1 : 0);
+    const detail = (r.details?.injection_attack ?? {}) as Record<string, string>;
+    const confidence = parseFloat(detail.attack) || (flagged ? 1 : 0);
     return { flagged, confidence };
   }
 
   // -- Checkpoint 2: every extracted item, before it is written ---------------
   /**
-   * Adherence: is `answer` supported by `context`?  For Helm:
-   *   context = item.source_quote, answer = item.text.
-   * Returns adherent=true when the item is backed by the transcript.
+   * Adherence: is `llmAnswer` supported by `context`?
    *
-   * TODO(9.1): confirm body field names against the docs' Postman collection.
-   * Some pages show {context, answer}; if yours differs, change here only.
+   * VERIFIED field names: { context, llm_answer }
+   * VERIFIED response:    { summary: { adherence_score: 0.0 | 1.0 } }
+   *
+   * IMPORTANT: `context` must be a WIDE transcript chunk with speaker labels,
+   * not just the tight source_quote. Otherwise the detector can't see who
+   * said what and will reject even truthful items (see header comment).
    */
-  async checkAdherence(context: string, answer: string): Promise<{ adherent: boolean }> {
-    const r = await this.post<{ summary?: Record<string, number>; adherence_score?: number }>(
+  async checkAdherence(context: string, llmAnswer: string): Promise<{ adherent: boolean }> {
+    const r = await this.post<{ summary: { adherence_score: number } }>(
       "/guardrails/adherence",
-      { context, answer }
+      { context, llm_answer: llmAnswer }
     );
-    const score = r.summary?.adherence ?? r.adherence_score ?? 0;
-    return { adherent: score === 1 };
+    return { adherent: r.summary.adherence_score === 1.0 };
   }
 
-  /** Relevancy: does `answer` address `question`? Used as a secondary signal. */
-  async checkRelevancy(question: string, answer: string): Promise<{ relevant: boolean }> {
-    const r = await this.post<{ summary?: Record<string, number>; relevancy?: number }>(
+  /**
+   * Relevancy: does `llmAnswer` address `question`?
+   * VERIFIED field names: { question, llm_answer }
+   * VERIFIED response:    { summary: { relevancy_score: 0.0 | 1.0 } }
+   */
+  async checkRelevancy(question: string, llmAnswer: string): Promise<{ relevant: boolean }> {
+    const r = await this.post<{ summary: { relevancy_score: number } }>(
       "/guardrails/relevancy",
-      { question, answer }
+      { question, llm_answer: llmAnswer }
     );
-    const score = r.summary?.relevancy ?? r.relevancy ?? 0;
-    return { relevant: score === 1 };
+    return { relevant: r.summary.relevancy_score === 1.0 };
   }
 
   // -- Checkpoint 3: drafted follow-up, before it enters the approval queue ----
