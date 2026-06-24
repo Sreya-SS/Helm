@@ -1,0 +1,19 @@
+[00:00] Priya: Okay, kicking off the Helm dashboard project. Let's lock the big technical calls today so we're not relitigating them later.
+
+[00:14] Rahul: On storage — I think we go with MongoDB. It's quick to start and we don't have a fixed schema yet.
+
+[00:29] Priya: Fine for now. Decision: we'll use MongoDB for the first cut. Rahul, can you stand up the database this week?
+
+[00:41] Rahul: Yeah, I'll have the MongoDB instance and the base collections ready by Friday.
+
+[01:03] Sreya: I'll take the dashboard UI. But heads up — I can't wire the live data until Rahul's database is actually up, so my work is blocked on his.
+
+[01:18] Priya: Noted. Sreya owns the dashboard UI, depends on the database being ready. Let's target the UI shell by June 27th.
+
+[01:35] Ananya: I'll handle the API tests once there's an endpoint to hit. No firm date yet, sometime after the UI shell.
+
+[01:52] Priya: Good. Last thing — Ananya, can you also draft the deployment plan before the demo?
+
+[02:04] Ananya: Sure, deployment plan before the demo.
+
+[02:10] Priya: That's it. Thanks everyone.

@@ -1,0 +1,44 @@
+{
+  "_comment": "Hand-labeled ground truth for transcript_01_kickoff.txt. This is the HONEST golden set (doc 16.7) — written by a human, not generated, so LLM-grading-LLM stays non-circular. Conforms to ExtractionResultSchema in packages/agents/schemas/item.schema.ts. meeting date assumed 2026-06-22 for deadline resolution.",
+  "items": [
+    {
+      "type": "decision",
+      "text": "Use MongoDB for the first cut of the project.",
+      "source_quote": "Decision: we'll use MongoDB for the first cut.",
+      "source_timestamp": 29
+    },
+    {
+      "type": "action_item",
+      "text": "Stand up the MongoDB database and base collections.",
+      "owner": "Rahul",
+      "deadline": { "raw": "by Friday", "resolved_iso": "2026-06-26" },
+      "source_quote": "I'll have the MongoDB instance and the base collections ready by Friday.",
+      "source_timestamp": 41
+    },
+    {
+      "type": "action_item",
+      "text": "Build the dashboard UI.",
+      "owner": "Sreya",
+      "deadline": { "raw": "UI shell by June 27th", "resolved_iso": "2026-06-27" },
+      "dependency_hints": ["can't wire the live data until Rahul's database is up", "depends on the database being ready"],
+      "source_quote": "Sreya owns the dashboard UI, depends on the database being ready. Let's target the UI shell by June 27th.",
+      "source_timestamp": 78
+    },
+    {
+      "type": "action_item",
+      "text": "Write the API tests.",
+      "owner": "Ananya",
+      "dependency_hints": ["once there's an endpoint to hit", "sometime after the UI shell"],
+      "source_quote": "I'll handle the API tests once there's an endpoint to hit. No firm date yet, sometime after the UI shell.",
+      "source_timestamp": 95
+    },
+    {
+      "type": "action_item",
+      "text": "Draft the deployment plan.",
+      "owner": "Ananya",
+      "deadline": { "raw": "before the demo" },
+      "source_quote": "deployment plan before the demo.",
+      "source_timestamp": 124
+    }
+  ]
+}

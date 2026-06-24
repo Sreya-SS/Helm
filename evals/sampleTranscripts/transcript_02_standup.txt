@@ -1,0 +1,15 @@
+[00:00] Priya: Quick standup. First — Rahul, where are we on the database?
+
+[00:09] Rahul: So, change of plan. I started on MongoDB but the moment I mapped out items, decisions, dependencies — it's all relational. Foreign keys everywhere. I want to switch to PostgreSQL.
+
+[00:27] Priya: That's a reversal from last week, but it makes sense. Decision: we're moving from MongoDB to PostgreSQL because the data is relational. Ignore the earlier MongoDB call.
+
+[00:44] Rahul: I'll have Postgres set up by Wednesday.
+
+[00:51] Sreya: That pushes me. My dashboard UI was waiting on the database — still blocked until Rahul's Postgres is live.
+
+[01:06] Priya: Understood. Sreya's UI stays blocked on the database. Ananya, any movement on the API tests?
+
+[01:18] Ananya: Not yet, still waiting on a live endpoint.
+
+[01:24] Priya: Okay. Let's reconvene Thursday.
